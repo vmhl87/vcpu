@@ -3,12 +3,22 @@
 #include <string.h>
 #include <stdio.h>
 
+// max chars per line
+#define MAX_LINE_LENGTH 64
+
+// total cpu memory (bytes)
+#define STACK_SIZE 4096
+
+// label cache capacity (approx)
+#define LABEL_SOFT_LIMIT 256
+
+// ------------------------------------------
+// --- error/log handling -------------------
+// ------------------------------------------
+
 typedef uint32_t byte4;
 typedef uint8_t byte;
 typedef uint8_t bool;
-
-#define MAX_LINE_LENGTH 64
-#define STACK_SIZE 4096
 
 bool verbose;
 #define log if(verbose) printf
@@ -33,9 +43,11 @@ void fail_p(int test, const char *str1, char *str2){
 }
 
 // ------------------------------------------
+// --- cpu memory management ----------------
+// ------------------------------------------
 
+byte4 stack_ptr, ip, sp;
 byte stack[STACK_SIZE];
-byte4 stack_ptr;
 
 void stack_push(byte data){
 log("    push 0x%02X\n", data);
@@ -72,6 +84,8 @@ void set_stack_4(int i, int data){
 }
 
 // ------------------------------------------
+// --- label trie & ref tables --------------
+// ------------------------------------------
 
 struct label_map_node{
 	struct label_map_node *c[256];
@@ -79,13 +93,13 @@ struct label_map_node{
 	int id;
 };
 
-struct label_map_node label_map_data[256];
+struct label_map_node label_map_data[LABEL_SOFT_LIMIT*8];
 int label_map_fill;
 
-byte4 label_id_table[256];
+byte4 label_id_table[LABEL_SOFT_LIMIT];
 int label_id_table_fill;
 
-int label_ref_table[256][2];
+int label_ref_table[LABEL_SOFT_LIMIT][2];
 int label_ref_table_fill;
 
 struct label_map_node* _find(char *label){
@@ -97,7 +111,8 @@ struct label_map_node* _find(char *label){
 			p->c[l[0]] = label_map_data+(++label_map_fill);
 			p->c[l[0]]->id = -1;
 
-			fail_p(label_map_fill == 256, "label_map_data capacity reached when parsing \"%s\"", label);
+			fail_p(label_map_fill == LABEL_SOFT_LIMIT*8,
+				"label_map_data capacity reached when parsing \"%s\"", label);
 		}
 
 		p = p->c[l[0]], ++l;
@@ -109,7 +124,9 @@ struct label_map_node* _find(char *label){
 void label_map_set(char *label, byte4 loc){
 	struct label_map_node *p = _find(label);
 
-	if(p->id == -1) p->id = label_id_table_fill++;
+	if(p->id == -1) p->id = label_id_table_fill++,
+		fail_p(label_id_table_fill == LABEL_SOFT_LIMIT,
+			"label_id_table capacity reached when parsing \"%s\"", label);
 
 	label_id_table[p->id] = (p->loc = loc);
 }
@@ -117,7 +134,9 @@ void label_map_set(char *label, byte4 loc){
 int label_map_get_id(char *label){
 	struct label_map_node *p = _find(label);
 
-	if(p->id == -1) p->id = label_id_table_fill++;
+	if(p->id == -1) p->id = label_id_table_fill++,
+		fail_p(label_id_table_fill == LABEL_SOFT_LIMIT,
+			"label_id_table capacity reached when parsing \"%s\"", label);
 
 	return p->id;
 }
@@ -126,6 +145,8 @@ void label_map_save_ref(int loc, int id){
 	label_ref_table[label_ref_table_fill][0] = loc;
 	label_ref_table[label_ref_table_fill][1] = id;
 	++label_ref_table_fill;
+	fail_p(label_ref_table_fill == LABEL_SOFT_LIMIT,
+		"label_ref_table capacity reached when parsing \"%s\"", label);
 }
 
 void populate_label_refs(){
@@ -148,6 +169,8 @@ byte4 label_map_get(char *label){
 	return p->loc;
 }
 
+// ------------------------------------------
+// --- tokenization & parsing ---------------
 // ------------------------------------------
 
 int grab_token(int start, char line[MAX_LINE_LENGTH]){
@@ -292,7 +315,11 @@ fail:
 	return ret;
 }
 
-void parse(char line[MAX_LINE_LENGTH]){
+// ------------------------------------------
+// --- assemble src -------------------------
+// ------------------------------------------
+
+void assemble_line(char line[MAX_LINE_LENGTH]){
 	for(int i=0, j=0; i<MAX_LINE_LENGTH; j^=(line[i++]=='\"')) if(line[i] == '#' && !j) line[i] = 0;
 	for(int i=0; i<MAX_LINE_LENGTH; ++i) if(line[i] == '\t') line[i] = ' ';
 	if(line[0] == 0 || line[0] == ' ') return;
@@ -692,9 +719,37 @@ log("  arg 1: \"%s\"\n", arg);
 log("\n");
 }
 
-// ------------------------------------------
+void assemble(const char *file){
+	FILE *f = fopen(file, "r");
+	fail_p(f == NULL, "failed to open \'%s\'", (char*) file);
 
-byte4 ip, sp;
+	char line[MAX_LINE_LENGTH] = {};
+
+	for(int _c=0, i=0; _c != EOF;){
+		_c = fgetc(f);
+
+		if(_c == EOF || _c == '\n'){
+			++line_num, assemble_line(line);
+
+			for(int j=0; j<i; ++j) line[j] = 0;
+			i = 0;
+
+		}else if(i < 127) line[i++] = _c;
+	}
+
+	line_num = -1;
+
+	populate_label_refs();
+
+	ip = label_map_get("main");
+	sp = stack_ptr;
+
+	fclose(f);
+}
+
+// ------------------------------------------
+// --- execute bytecode ---------------------
+// ------------------------------------------
 
 void execute(){
 	while(1){
@@ -1030,34 +1085,8 @@ log("----\t@%d\t0x%02X\n", ip, inst);
 }
 
 // ------------------------------------------
-
-void assemble(const char *file){
-	FILE *f = fopen(file, "r");
-	fail_p(f == NULL, "failed to open \'%s\'", (char*) file);
-
-	char line[MAX_LINE_LENGTH] = {};
-
-	for(int _c=0, i=0; _c != EOF;){
-		_c = fgetc(f);
-
-		if(_c == EOF || _c == '\n'){
-			++line_num, parse(line);
-
-			for(int j=0; j<i; ++j) line[j] = 0;
-			i = 0;
-
-		}else if(i < 127) line[i++] = _c;
-	}
-
-	line_num = -1;
-
-	populate_label_refs();
-
-	ip = label_map_get("main");
-	sp = stack_ptr;
-
-	fclose(f);
-}
+// --- cli interface ------------------------
+// ------------------------------------------
 
 void write_bytecode(const char *file){
 	FILE *f = fopen(file, "w");
