@@ -1,6 +1,5 @@
 main:
-out "hello world\n"
-out "what is your name? "
+out "hello world\nwhat is your name? "
 
 set @17 0
 read_next_char:

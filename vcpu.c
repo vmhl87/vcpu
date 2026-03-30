@@ -1049,9 +1049,9 @@ void assemble(const char *file){
 		}else if(i < 127) line[i++] = _c;
 	}
 
-	populate_label_refs();
-
 	line_num = -1;
+
+	populate_label_refs();
 
 	ip = label_map_get("main");
 	sp = stack_ptr;
@@ -1085,7 +1085,7 @@ void read_bytecode(const char *file){
 int main(int argc, const char *argv[]){
 	if(argc == 2 && !strcmp(argv[1], "-h")){
 		printf(
-			"[tiny virtual machine]\tusage:\n\n"
+			"[vcpu v1.0.0]\tusage:\n\n"
 			"assemble:\t%s -a source.s program.o\n"
 			"execute:\t%s -x program.o\n\n",
 			argv[0], argv[0]
