@@ -1,0 +1,156 @@
+### BYTECODE REFERENCE ###
+
+1: 1-byte write
+2: 4-byte write
+3: n-byte write
+	flag:
+		8: dest is absolute
+		4: dest is relative
+		2: src is absolute
+		1: src is relative
+	
+	fixed-byte:
+		<inst> <location> <data>
+	
+	multi-byte:
+		<inst> <location> <byte count> <data>
+
+4: 1-byte i/o
+5: n-byte i/o
+	flag:
+		8: write
+		4: read
+		2: location is absolute
+		1: location is relative
+	
+	1-byte:
+		<inst> <byte>
+		<inst> <location>
+	
+	multi-byte:
+		<inst> <length> <bytes>
+		<inst> <length> <location>
+
+6: goto/call   // can ONLY index comparator relatively
+	flag:
+		8: (call:stage 2) (goto:conditional)
+		4: call
+		2: location is absolute
+		1: location is relative
+	
+	call:
+		<inst1> <location> <inst2> <stack advance amt>
+	
+	goto:
+		<inst> <location>
+
+	cond:
+		<inst> <location> <src>  // jump if NONZERO
+
+7: ret/exit
+	70: ret
+	71: exit
+
+8: 1-byte math
+	flag:
+		8: invert
+		4: multiply
+		2: src is relative
+		1: dest is relative
+	
+	all:
+		<inst> <dest> <src>
+
+9: 4-byte math
+	flag:
+		8: invert
+		4: multiply
+		2: src is relative
+		1: dest is relative
+	
+	all:
+		<inst> <dest> <src>
+
+a: increment
+	flag:
+		8: invert
+		4: multiply
+		2: 4-byte
+		1: dest is relative
+	
+	all:
+		<inst> <dest> <amt>
+
+b: comparison   // can ONLY index relatively
+	flag:
+		8: 4-byte
+		4: invert
+		2: check >0
+		1: check <0
+
+	all:
+		<inst> <dest> <src>
+
+c: boolean
+	flag:
+		8: invert
+		4: and
+		2: src is relative
+		1: dest is relative
+	
+	all:
+		<inst> <dest> <src>
+
+d: load   // can ONLY index using relative addressing
+	flag:
+		8: invert
+		4: n-byte load
+		2: 4-byte load
+		1: base addr is relative
+	
+	fixed-byte:
+		<inst> <addr> <location>
+	
+	multi-byte:
+		<inst> <addr> <location> <count>
+
+e,f: misc,syscall
+
+
+
+### ASSEMBLY REFERENCE ###
+
+set <addr1:relative,absolute> <addr2:relative,absolute> <size:1,4,n>
+set <addr1:relative,absolute> <data>
+
+in <addr1:relative,absolute> <bytes:1,n>
+
+out <addr1:relative,absolute> <bytes:1,n>
+out <data>
+
+goto <addr1:relative,absolute>
+goto <label>
+
+call <label> <offset:uint>
+
+cond <label> <addr1:relative>
+
+ret
+
+exit
+
+(add/sub/mul/div)1 <addr1:relative,absolute> <addr2:relative,absolute>
+(add/sub/mul/div)1 <addr1:relative,absolute> <data:byte>
+
+(add/sub/mul/div) <addr1:relative,absolute> <addr2:relative,absolute>
+(add/sub/mul/div) <addr1:relative,absolute> <data:byte4>
+
+comp <addr1:relative> <addr2:relative> <comparator:subset(!<=>)>
+
+(and/or/nand/nor) <addr1:relative,absolute> <addr2:relative,absolute>
+
+load <addr1:relative> <addr2:relative> <size:1,4,n>
+load <addr1:relative> <addr2:relative>
+
+save <addr1:relative> <addr2:relative> <size:1,4,n>
+save <addr1:relative> <addr2:relative>
