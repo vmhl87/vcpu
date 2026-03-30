@@ -2,7 +2,8 @@ A simple 32-bit virtual cpu, implementing a von neumann stack machine architectu
 
 Its instruction set and assembly format are very minimal. Heap allocations are not implemented (yet).
 
-`vcpu.c` compiles into an executable that handles execution and assembling. For example, to run the following "hello world" program:
+`vcpu.c` compiles into an executable that handles execution and assembling.
+For example, to run the following "hello world" program:
 
 ```asm
 main:
@@ -37,7 +38,8 @@ out "!\n"
 exit
 ```
 
-`./cpu -a hello_world.s hello_world.o` produces the bytecode file `hello_world.o`. Its contents can be printed using, say, the unix `hexdump` utility:
+`./cpu -a hello_world.s hello_world.o` produces the bytecode file `hello_world.o`.
+Its contents can be printed using, say, the unix `hexdump` utility:
 
 ```
 00000000  c3 00 00 00 00 00 00 00  58 1f 00 00 00 68 65 6c  |........X....hel|
@@ -56,7 +58,7 @@ exit
 000000cb
 ```
 
-Then, `./cpu -x hello_world.o` executes the file, yielding:
+`./cpu -x hello_world.o` executes the assembled program, yielding:
 
 ```
 hello world
@@ -66,8 +68,8 @@ hello, vmhl87!
 
 A few more options are available:
 
-- `./cpu -ax program.s`: assembles and executes immediately, without creating a bytecode file
+- `./cpu -ax program.s`: assembles and executes immediately, without creating a bytecode file.
 
-- Adding `v` to the flag enables verbose logging, e.g. `./cpu -xv program.o` logs executed instructions to stdout
+- Adding `v` to the flag enables verbose logging, e.g. `./cpu -xv program.o` logs executed instructions to stdout.
 
-A short assembly/bytecode reference is available at [](reference.txt).
+A short assembly/bytecode reference is available in [reference.txt](reference.txt).
