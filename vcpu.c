@@ -145,8 +145,8 @@ void label_map_save_ref(int loc, int id){
 	label_ref_table[label_ref_table_fill][0] = loc;
 	label_ref_table[label_ref_table_fill][1] = id;
 	++label_ref_table_fill;
-	fail_p(label_ref_table_fill == LABEL_SOFT_LIMIT,
-		"label_ref_table capacity reached when parsing \"%s\"", label);
+	fail(label_ref_table_fill == LABEL_SOFT_LIMIT,
+		"label_ref_table capacity reached");
 }
 
 void populate_label_refs(){
@@ -586,9 +586,10 @@ log("  arg 1: \"%s\", arg 2: \"%s\", arg 3: \"%s\"\n", arg1, arg2, arg3);
 
 		stack_push(inst);
 		stack_push_4(addr1.data);
-		stack_push(addr2.data);
+		if(addr2.type == 0) stack_push(addr2.data);
+		else stack_push_4(addr2.data);
 		
-	}else if(!strcmp(line, "comp")){
+	}else if(!strcmp(line, "comp") || !strcmp(line, "comp1")){
 		char *arg1 = line+start;
 		start = grab_token(start, line);
 		char *arg2 = line+start;
@@ -604,7 +605,9 @@ log("  arg 1: \"%s\", arg 2: \"%s\", arg 3: \"%s\"\n", arg1, arg2, arg3);
 		fail_p(addr1.type != 1, "first argument to 'comp' must be relative address: \"%s\"", arg1);
 		fail_p(addr2.type != 1, "second argument to 'comp' must be relative address: \"%s\"", arg2);
 
-		byte inst = 0xb8;
+		byte inst = 0xb0;
+
+		if(line[4] == 0) inst |= 0x08;
 
 		for(int i=0; arg3[i]; ++i){
 			if(arg3[i] == '!') inst |= 4;
@@ -724,6 +727,7 @@ void assemble(const char *file){
 	fail_p(f == NULL, "failed to open \'%s\'", (char*) file);
 
 	char line[MAX_LINE_LENGTH] = {};
+	++line_num;
 
 	for(int _c=0, i=0; _c != EOF;){
 		_c = fgetc(f);
@@ -831,7 +835,7 @@ log("----\t@%d\t0x%02X\n", ip, inst);
 						fail(1, "cannot read to non-address");
 
 					}else{
-						fread((char*) stack+src, 1, 1, stdin);
+						if(!fread((char*) stack+src, 1, 1, stdin)) set_stack(src, 0x00);
 log("in_1\t@%d\t0x%02X\tsrc:%d dat:0x%02X\n", ip, inst, src, get_stack(src));
 						next_inst = ip+5;
 					}
@@ -863,7 +867,7 @@ log("----\t@%d\t0x%02X\n", ip, inst);
 
 					}else{
 log("in_4\t@%d\t0x%02X\tsrc:%d len:%d\n", ip, inst, src, len);
-						fread((char*) stack+src, 1, len, stdin);
+						if(!fread((char*) stack+src, 1, len, stdin)) set_stack(src, 0);
 						next_inst = ip+9;
 					}
 				}
@@ -1004,11 +1008,13 @@ log("div_1\t@%d\t0x%02X\tdest:0x%02X, amt:0x%02X\n", ip, inst, get_stack(dest), 
 log("comp_4\t@%d\t0x%02X\tdest:0x%02X, val:%d, res:0x%02X\n", ip, inst, loc, val, res);
 					set_stack(loc, res);
 				}else{
-					byte res = 0, val = get_stack(sp+get_stack_4(ip+5));
-					if(val == 0x00) res = 1;
-					if(low & 2) res |= val > 0x00;
+					byte res = 0;
+					int val = get_stack(sp+get_stack_4(ip+5));
+					if(val == 0) res = 1;
+					if(low & 1) res |= val < 0;
+					if(low & 2) res |= val > 0;
 					if(low & 4) res ^= 1;
-log("comp_1\t@%d\t0x%02X\tdest:0x%02X, val:0x%02X, res:0x%02X\n", ip, inst, loc, val, res);
+log("comp_1\t@%d\t0x%02X\tdest:0x%02X, val:%d, res:0x%02X\n", ip, inst, loc, val, res);
 					set_stack(loc, res);
 				}
 				next_inst = ip+9;
