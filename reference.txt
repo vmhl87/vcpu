@@ -47,9 +47,19 @@
 	cond:
 		<inst> <location> <src>  // jump if NONZERO
 
-7: ret/exit
+7: misc
 	70: ret
 	71: exit
+	72: dump sp to relative
+	73: dump sp to absolute
+	74: push sp
+	75: pop sp
+
+	dump sp:
+		<inst> <location>
+
+	push sp:
+		<inst> <amount>
 
 8: 1-byte math
 	flag:
@@ -145,6 +155,7 @@ exit
 (add/sub/mul/div) <addr1:relative,absolute> <addr2:relative,absolute>
 (add/sub/mul/div) <addr1:relative,absolute> <data:byte4>
 
+comp1 <addr1:relative> <addr2:relative> <comparator:subset(!<=>)>
 comp <addr1:relative> <addr2:relative> <comparator:subset(!<=>)>
 
 (and/or/nand/nor) <addr1:relative,absolute> <addr2:relative,absolute>

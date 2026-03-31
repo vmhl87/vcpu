@@ -243,20 +243,20 @@ struct data parse_data(char *_arg){
 			++arg;
 		}
 
-		if(ret.bytes < 4){
-			ret.data = 0;
-			for(int i=0; i<ret.bytes; ++i) ret.data = (ret.data << 4) | _arg[i];
+		if(ret.bytes <= 4){
+			for(int i=0; i<4; ++i) ((byte*) (&ret.data))[i] = 0x00;
+			for(int i=0; i<ret.bytes; ++i) ((byte*) (&ret.data))[i] = _arg[i];
 		}
 
 		return ret;
 
 	}else if(arg[0] == '@'){
-		ret.type = 1, ret.bytes = 4;
-		if(arg[1] == '-') sign *= -1, ++arg;
-		++arg;
+		ret.type = 1, ret.bytes = 4, ++arg;
+		if(arg[0] == '-') sign *= -1, ++arg;
 
 	}else if(arg[0] == '&'){
 		ret.type = 2, ret.bytes = 4, ++arg;
+		if(arg[0] == '-') sign *= -1, ++arg;
 
 	}else if(arg[0] == '-'){
 		sign *= -1, ret.bytes = 4, ++arg;
@@ -282,10 +282,9 @@ struct data parse_data(char *_arg){
 
 			if(chars%2 != 0 || arg[0] != 0) goto fail;
 			
-			if(ret.bytes < 4){
-				ret.data = 0;
-				for(int i=0; i<ret.bytes; ++i) ret.data = (ret.data << 4) | _arg[i];
-				ret.data *= sign;
+			if(ret.bytes <= 4){
+				for(int i=0; i<4; ++i) ((byte*) (&ret.data))[i] = 0x00;
+				for(int i=0; i<ret.bytes; ++i) ((byte*) (&ret.data))[ret.bytes-i-1] = _arg[i];
 
 			}else if(sign != 1) goto fail;
 
@@ -687,6 +686,8 @@ log("  arg 1: \"%s\", arg 2: \"%s\", arg 3: \"%s\"\n", arg1, arg2, arg3);
 			start = grab_token(start, line);
 
 			if(arg[0] == ')') break;
+
+log("  arg: \"%s\"\n", arg);
 
 			if(label_map_data[0].c[arg[0]] != NULL){
 				int addr = label_map_get_id(arg);
