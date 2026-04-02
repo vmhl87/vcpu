@@ -6,11 +6,11 @@
 // max chars per line
 #define MAX_LINE_LENGTH 64
 
-// total cpu memory (bytes)
-#define STACK_SIZE 4096
+// total cpu memory
+#define STACK_SIZE 1<<22
 
-// label cache capacity (approx)
-#define LABEL_SOFT_LIMIT 256
+// label cache rough capacity
+#define LABEL_SOFT_LIMIT 1024
 
 // ------------------------------------------
 // --- error/log handling -------------------
@@ -177,6 +177,7 @@ int grab_token(int start, char line[MAX_LINE_LENGTH]){
 	bool string_mode = 0;
 	for(int i=start; i<MAX_LINE_LENGTH; ++i){
 		if(string_mode){
+			if(line[i] == '\\' && line[i+1] == '\"') i += 2;
 			if(line[i] == '\"') string_mode = 0;
 			continue;
 		}
@@ -228,12 +229,14 @@ struct data parse_data(char *_arg){
 
 					case '\"':
 						_arg[ret.bytes++] = 0x22;
+						break;
 
 					case '\\':
 						_arg[ret.bytes++] = 0x5c;
 						break;
 
-					fail_p(1, "invalid escape sequence: %s", _arg);
+					arg[2] = 0x00;
+					fail_p(1, "invalid escape sequence: '\\%s'", arg+1);
 				}
 
 				++arg;

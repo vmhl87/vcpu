@@ -1,11 +1,30 @@
-# byte line_buffer[64];				line_buffer@0-63
+# byte line_buffer[64];							line_buffer@0-63
 null 64
-# int line_num;						line_num@64-67
+# int line_num;									line_num@64-67
 ( 0 )
-# int stack_top;					stack_top@68-71
+# int stack_top;								stack_top@68-71
 ( 0 )
-# char *func = "func\0";			func@72-76
+# int stack_tmp_top;							stack_tmp_top@72-75
+( 0 )
+# int func_header;								func_header@76-79
+( 0 )
+# struct textentry { char name[16], int data };
+# textentry map_data[64];						map_data@80-1359
+null 1280
+# int map_size;									map_size@1360-1363
+( 0 )
+# char *func = "func\0";						func@1364-1368
 ( "func" 0x00 )
+# char *ret = "ret\0";							ret@1369-1372
+( "ret" 0x00 )
+# char *arg = "arg\0";							arg@1373-1376
+( "arg" 0x00 )
+# char *var = "var\0";							var@1377-1380
+( "var" 0x00 )
+# char *tmp = "tmp\0";							tmp@1381-1384
+( "tmp" 0x00 )
+# char *call = "tmp\0";							call@1385-1389
+( "call" 0x00 )
 
 
 # arg1: -8, ptr: -4
@@ -122,6 +141,28 @@ print_byte_3:
 ret
 
 
+# str: -8, ptr: -4
+print_str:
+# byte* ptr = str;						ptr@0-3
+set @0 @-8
+# loop:
+print_str_0:
+# byte char = *ptr;						char@4-4
+load &0 @4 1
+# if(char != 0x00) goto not_null;
+cond print_str_1 @4
+# return;
+ret
+# not_null:
+print_str_1:
+# out(char);
+out @4 1
+# ptr++;
+add @0 1
+# goto loop;
+goto print_str_0
+
+
 # ret: -13, addr1: -12, addr2: -8, ptr: -4
 streq:
 # loop_0:
@@ -158,11 +199,70 @@ set @-13 0x00
 ret
 
 
+# str: -12, val: -8, ptr: -4
+insert_map:
+# out("insert_map called\n");
+out "insert_map called"
+out 0x0a
+# return;
+ret
+
+
+# ret: -12, str: -8, ptr: -4
+find_map:
+# return;
+ret
+
+
+# ret: -12, str: -8, ptr: -4
+split:
+# byte* ptr = str;						ptr@0-3
+set @0 @-8
+# loop:
+split_0:
+# byte char = *ptr;						char@4-4
+load &0 @4 1
+# if(char != 0x00) goto not_null;
+cond split_1 @4
+# return ptr+1;
+set @-12 @0
+add @-12 1
+ret
+# not_null:
+split_1:
+# if(char != 0x0a) goto not_space;
+set @5 @4 1
+sub1 @5 0x20
+cond split_2 @5
+# *ptr = 0x00;
+set @5 0x00
+save &0 @5 1
+# return ptr+1;
+set @-12 @0
+add @-12 1
+ret
+# not_space;
+split_2:
+# ptr++;
+add @0 1
+# goto loop;
+goto split_0
+
+
+# ret: -12, str: -8, ptr: -4
+parse_int:
+# out("parse_int called\n");
+out "parse_int called"
+out 0x0a
+# return;
+ret
+
+
 process_line:
 out "process_line called\n"
 # if(!streq(func, line_buffer)) goto not_func;
 set @1 0
-set @5 72
+set @5 1364
 call streq 13
 nor @0 @0
 cond process_line_0 @0
@@ -171,11 +271,100 @@ out "found a function on line "
 set @0 &64
 call print_int 8
 out "!\n"
-# do function things
+# stack_top = 0;
+set &68 0
+# stack_tmp_top = 0;
+set &72 0
+# func_header = 4;
+set &76 0
+# map_size = 0;
+set &1360 0
 # return;
 ret
 # not_func:
 process_line_0:
+# if(!streq(ret, line_buffer)) goto not_ret;
+set @1 0
+set @5 1369
+call streq 13
+nor @0 @0
+cond process_line_1 @0
+# do return value things
+# return;
+ret
+# not_ret:
+process_line_1:
+# if(!streq(arg, line_buffer)) goto not_arg;
+set @1 0
+set @5 1373
+call streq 13
+nor @0 @0
+cond process_line_2 @0
+# do argument things
+# return;
+ret
+# not_arg:
+process_line_2:
+# if(!streq(var, line_buffer)) goto not_var;
+set @1 0
+set @5 1377
+call streq 13
+nor @0 @0
+cond process_line_3 @0
+# print_str(line_buffer);
+set @0 0
+call print_str 8
+out 0x0a
+# int arg1 = split(0);								arg1@0-3
+set @4 0
+call split 12
+# int arg2 = split(arg1);							arg2@4-7
+set @8 @0
+call split 16
+# split(arg2);
+set @12 @4
+call split 20
+# byte* loc = line_buffer+arg1;						loc@8-11
+set @8 @0
+# int size = parse_int(line_buffer+arg2);			size@12-15
+set @16 @4
+call parse_int 24
+# stack_top += size;
+add &68 @12
+# stack_tmp_top = stack_top;
+set &72 &68
+# insert_map(loc, stack_top);
+set @16 @8
+set @20 &68
+call insert_map 28
+# return;
+ret
+# not_var:
+process_line_3:
+# if(!streq(tmp, line_buffer)) goto not_tmp;
+set @1 0
+set @5 1381
+call streq 13
+nor @0 @0
+cond process_line_4 @0
+# do tmp var things
+# return;
+ret
+# not_tmp:
+process_line_4:
+# if(!streq(call, line_buffer)) goto normal;
+set @1 0
+set @5 1385
+call streq 13
+nor @0 @0
+cond process_line_5 @0
+# do call var things
+# return;
+ret
+# normal:
+process_line_5:
+# do normal things
+# return;
 ret
 
 
