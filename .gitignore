@@ -1,2 +1,6 @@
 *.o
 cpu
+
+.auto_out.s
+*/.compiler.o
+*/env

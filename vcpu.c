@@ -178,6 +178,7 @@ int grab_token(int start, char line[MAX_LINE_LENGTH]){
 	for(int i=start; i<MAX_LINE_LENGTH; ++i){
 		if(string_mode){
 			if(line[i] == '\\' && line[i+1] == '\"') i += 2;
+			else if(line[i] == '\\') i += 2;
 			if(line[i] == '\"') string_mode = 0;
 			continue;
 		}

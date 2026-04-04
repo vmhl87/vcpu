@@ -344,6 +344,72 @@ goto parse_int_0
 
 
 process_line:
+# int i = 0;							i@0-3
+set @0 0
+# bool string = 0;						string@4-4
+set @4 0x00
+# comment_loop:
+process_line_0_0:
+# byte char = line_buffer[i];			char@5-5
+load& @0 @5
+# if(char == 0x00) goto comment_loop_done;
+comp1 @6 @5 =
+cond process_line_0_4 @6
+# if(string) goto in_string;
+cond process_line_0_1 @4
+# i++;
+add @0 1
+# if(char != '\"') goto not_comment;
+set @6 @5 1
+sub1 @6 "\""
+comp1 @7 @6 !=
+cond process_line_0_0_0 @7
+# string = 1;
+set @4 0x01
+# goto comment_loop;
+goto process_line_0_0
+# not_comment:
+process_line_0_0_0:
+# if(char != '#') goto comment_loop;
+set @6 @5 1
+sub1 @6 "#"
+comp1 @7 @6 !=
+cond process_line_0_0 @7
+# i--;
+sub @0 1
+# line_buffer[i] = 0x00;
+set @6 0x00
+save& @0 @6
+# goto comment_loop_done;
+goto process_line_0_4
+# in_string:
+process_line_0_1:
+# if(char != '\') goto not_escape;
+set @6 @5 1
+sub1 @6 "\\"
+comp1 @7 @6 !=
+cond process_line_0_2 @7
+# i += 2;
+add @0 2
+# goto comment_loop;
+goto process_line_0_0
+# not_escape:
+process_line_0_2:
+# if(char != '\"') goto not_end_string;
+set @6 @5 1
+sub1 @6 "\""
+comp1 @7 @6 !=
+cond process_line_0_3 @7
+# string = 0;
+set @4 0x00
+# not_end_string:
+process_line_0_3:
+# i++;
+add @0 1
+# goto comment_loop;
+goto process_line_0_0
+# comment_loop_done:
+process_line_0_4:
 # if(!streq(func, line_buffer)) goto not_func;
 set @1 0
 set @5 1368
@@ -370,7 +436,35 @@ set @5 1373
 call streq 13
 nor @0 @0
 cond process_line_1 @0
-# do return value things
+# int arg1 = split(0);								arg1@0-3
+set @4 0
+call split 12
+# int arg2 = split(arg1);							arg2@4-7
+set @8 @0
+call split 16
+# split(arg2);
+set @12 @4
+call split 20
+# byte* loc = line_buffer+arg1;						loc@8-11
+set @8 @0
+# int size = parse_int(line_buffer+arg2);			size@12-15
+set @16 @4
+call parse_int 24
+# map_tmp_top = map_top;
+set &1364 &1360
+# insert_map(loc, stack_top-4);
+set @16 @8
+set @20 &68
+sub @20 4
+call insert_map 28
+# stack_top += size;
+add &68 @12
+# stack_tmp_top = stack_top;
+set &72 &68
+# func_header += size;
+add &76 &12
+# map_top = map_tmp_top;
+set &1360 &1364
 # return;
 ret
 # not_ret:
@@ -381,7 +475,35 @@ set @5 1377
 call streq 13
 nor @0 @0
 cond process_line_2 @0
-# do argument things
+# int arg1 = split(0);								arg1@0-3
+set @4 0
+call split 12
+# int arg2 = split(arg1);							arg2@4-7
+set @8 @0
+call split 16
+# split(arg2);
+set @12 @4
+call split 20
+# byte* loc = line_buffer+arg1;						loc@8-11
+set @8 @0
+# int size = parse_int(line_buffer+arg2);			size@12-15
+set @16 @4
+call parse_int 24
+# map_tmp_top = map_top;
+set &1364 &1360
+# insert_map(loc, stack_top-4);
+set @16 @8
+set @20 &68
+sub @20 4
+call insert_map 28
+# stack_top += size;
+add &68 @12
+# stack_tmp_top = stack_top;
+set &72 &68
+# func_header += size;
+add &76 &12
+# map_top = map_tmp_top;
+set &1360 &1364
 # return;
 ret
 # not_arg:
