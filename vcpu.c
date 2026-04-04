@@ -649,7 +649,7 @@ log("  arg 1: \"%s\", arg 2: \"%s\"", arg1, arg2);
 		stack_push_4(addr1.data);
 		stack_push_4(addr2.data);
 
-	}else if(!strcmp(line, "load") || !strcmp(line, "save")){
+	}else if(!strcmp(line, "load&") || !strcmp(line, "load@") || !strcmp(line, "save&") || !strcmp(line, "save@")){
 		char *arg1 = line+start;
 		start = grab_token(start, line);
 		char *arg2 = line+start;
@@ -662,18 +662,19 @@ log("  arg 1: \"%s\", arg 2: \"%s\", arg 3: \"%s\"\n", arg1, arg2, arg3);
 		struct data addr1 = parse_data(arg1);
 		struct data addr2 = parse_data(arg2);
 
-		fail_p(addr1.type == 0, "first argument to 'load' must be address: \"%s\"", arg1);
-		fail_p(addr2.type != 1, "second argument to 'load' must be relative address: \"%s\"", arg2);
+		fail_p(addr1.type != 1, "first argument to <load/save> must be relative address: \"%s\"", arg1);
+		fail_p(addr2.type != 1, "second argument to <load/save> must be relative address: \"%s\"", arg2);
 
 		int bytes = 4;
 
 		if(arg3[0] != 0){
 			struct data addr3 = parse_data(arg3);
-			fail_p(addr3.type != 0, "size argument to 'load' must be raw: \"%s\"", arg3);
+			fail_p(addr3.type != 0, "size argument to <load/save> must be raw: \"%s\"", arg3);
 			bytes = addr3.data;
 		}
 
-		byte inst = 0xd0 | (addr1.type & 1);
+		byte inst = 0xd0;
+		if(line[4] == '@') inst |= 1;
 		if(bytes == 4) inst |= 2;
 		else if(bytes != 1) inst |= 4;
 		if(line[0] == 's') inst |= 8;

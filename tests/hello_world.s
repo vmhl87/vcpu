@@ -4,7 +4,7 @@ out "hello world\nwhat is your name? "
 set @17 0
 read_next_char:
 in @16 1
-save @17 @16 1
+save@ @17 @16 1
 add @17 1
 
 set @21 @16 1
@@ -17,7 +17,7 @@ out "hello, "
 
 set @21 0
 write_next_char:
-load @21 @25 1
+load@ @21 @25 1
 add @21 1
 out @25 1
 

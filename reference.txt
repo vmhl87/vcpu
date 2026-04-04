@@ -160,6 +160,8 @@ comp <addr1:relative> <addr2:relative> <comparator:subset(!<=>)>
 
 (and/or/nand/nor) <addr1:relative,absolute> <addr2:relative,absolute>
 
-load <addr1:relative> <addr2:relative> <size:1,4,n;default(4)>
+load& <addr1:relative> <addr2:relative> <size:1,4,n;default(4)>
+load@ <addr1:relative> <addr2:relative> <size:1,4,n;default(4)>
 
-save <addr1:relative> <addr2:relative> <size:1,4,n;default(4)>
+save& <addr1:relative> <addr2:relative> <size:1,4,n;default(4)>
+save@ <addr1:relative> <addr2:relative> <size:1,4,n;default(4)>
